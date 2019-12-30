@@ -1,37 +1,48 @@
 function main() {
   function showDropdown() {
+    // contentNode contains the dropdown div.
     const contentNode = document.createElement('div');
     contentNode.className = 'ke-figma-helper__dropdown-content';
+
     const frameNodes = [...figma.currentPage.children]
     frameNodes.sort((a, b) => a.y - b.y);
     for (const item of frameNodes) {
       if (item.__proto__.constructor.name !== 'FrameNode' || item.children.length === 0) {
         continue;
       }
-      let str = '';
-      const nodes = [...item.children];
-      nodes.sort((a, b) => a.y - b.y);
-      const textNodes = nodes.filter(n => n.__proto__.constructor.name === 'TextNode');
-      if (textNodes.length / nodes.length < 0.7 && !item.name.endsWith('0') && item.width > 700) {
+
+      const textNodes = [...item.children.filter(n => n.__proto__.constructor.name === 'TextNode')];
+      textNodes.sort((a, b) => a.y - b.y);
+      // https://www.figma.com/file/cHX3MFFKp87mAGU735Z6X0/File-Template?node-id=155%3A41
+      if (item.width !== 512 || item.height !== 768 || textNodes.length < 3) {
         continue;
       }
-      for (const node of textNodes) {
-        if (!node.visible) {
-          continue;
-        }
-        if (str === '') {
-          str = node.characters;
-        } else {
-          str += '<br>' + node.characters;
+
+      let titleIndex = -1;
+      for (let i = 0; i !== textNodes.length; i++) {
+        if (textNodes[i].name === 'Title') {
+          titleIndex = i;
+          break;
         }
       }
-      if (str !== '') {
-        var a = document.createElement('a');
-        a.innerHTML = str;
-        a.onclick = function () {
-          figma.viewport.scrollAndZoomIntoView([item]);
-        }
-        contentNode.appendChild(a);
+      if (titleIndex === -1) {
+        continue;
+      }
+      const titlePElement = document.createElement('p');
+      titlePElement.innerText = textNodes[titleIndex].characters;
+
+      a = document.createElement('a');
+      a.appendChild(titlePElement);
+      a.onclick = function () {
+        figma.viewport.scrollAndZoomIntoView([item]);
+      }
+      contentNode.appendChild(a);
+
+      if (titleIndex < textNodes.length - 1 && textNodes[titleIndex + 1].name === 'Description') {
+        const descriptionPElement = document.createElement('p');
+        descriptionPElement.style.fontSize = '85%';
+        descriptionPElement.innerText = textNodes[titleIndex + 1].characters;
+        a.appendChild(descriptionPElement);
       }
     }
 
@@ -73,8 +84,9 @@ function main() {
       }
     }
 
-    setTimeout(showDropdown, 1000);
+    setTimeout(showDropdown, 100);
   }
+
   setTimeout(onButtonGroupReady, 2500);
 }
 
@@ -85,8 +97,9 @@ style.innerHTML = `
 .ke-figma-helper__dropdown-button {
   background-color: #3498DB;
   color: white;
-  padding: 16px;
-  font-size: 16px;
+  height: 40px;
+  width: 40px;
+  font-size: 14px;
   border: none;
   cursor: pointer;
 }
@@ -113,7 +126,7 @@ style.innerHTML = `
 
 .ke-figma-helper__dropdown-content a {
   color: black;
-  padding: 12px 16px;
+  padding: 8px 8px;
   text-decoration: none;
   display: block;
 }
