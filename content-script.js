@@ -4,6 +4,51 @@ function main() {
     const contentNode = document.createElement('div');
     contentNode.className = 'ke-figma-helper__dropdown-content';
 
+    // Add a section that can go to a specific node by ID.
+    const goToNodeDiv = document.createElement('div');
+    goToNodeDiv.className = 'ke-figma-helper__dropdown-content__go-to-node';
+    contentNode.appendChild(goToNodeDiv);
+
+    const goToNodeInput = document.createElement('input');
+    goToNodeInput.className = 'ke-figma-helper__dropdown-content__go-to-node__input';
+    goToNodeInput.placeholder = 'Node ID';
+    goToNodeDiv.appendChild(goToNodeInput);
+
+    const goToNodeButton = document.createElement('button');
+    goToNodeButton.className = 'ke-figma-helper__dropdown-content__go-to-node__button';
+    goToNodeButton.innerText = 'GO';
+    goToNodeDiv.appendChild(goToNodeButton);
+    goToNodeButton.onclick = function() {
+      let nodeID = goToNodeInput.value;
+      nodeID = nodeID.replace('%3A', ':');
+
+      let found = false;
+      let pageForNode = null;
+      let frameForNode = null;
+      for (const page of figma.root.children) {
+        if (found) {
+          break;
+        }
+        for (const frame of page.children) {
+          if (frame.id === nodeID) {
+            found = true;
+            pageForNode = page;
+            frameForNode = frame;
+            break;
+          }
+        }
+      }
+
+      if (found) {
+        const currentPage = figma.currentPage;
+        figma.currentPage = pageForNode;
+        figma.viewport.scrollAndZoomIntoView([frameForNode]);
+        if (figma.currentPage !== currentPage) {
+          showDropdown();
+        }
+      }
+    };
+
     const frameNodes = [...figma.currentPage.children]
     frameNodes.sort((a, b) => a.y - b.y);
     for (const item of frameNodes) {
@@ -137,6 +182,22 @@ style.innerHTML = `
 
 .ke-figma-helper__show {
   display:block;
+}
+
+.ke-figma-helper__dropdown-content__go-to-node {
+  display: flex;
+}
+
+.ke-figma-helper__dropdown-content__go-to-node__input {
+  padding-left: 16px;
+  padding-right: 16px;
+  flex-grow: 1;
+}
+
+.ke-figma-helper__dropdown-content__go-to-node__button {
+  flex-grow: 1;
+  background-color: #ddd;
+  min-width: 32px;
 }
 `;
 (document.body || document.head || document.documentElement).appendChild(script);
